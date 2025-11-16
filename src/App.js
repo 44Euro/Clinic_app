@@ -122,14 +122,61 @@ const Login = ({ onLogin }) => {
 
 const DoctorDashboard = ({ onLogout, userData }) => {
   const [activeTab, setActiveTab] = useState('records');
-  const [selectedPatient, setSelectedPatient] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [patientDetails, setPatientDetails] = useState(null);
+  const [showPatientModal, setShowPatientModal] = useState(false);
+  const [referralDetails, setReferralDetails] = useState(null);
+  const [showReferralModal, setShowReferralModal] = useState(false);
+  const [showTreatmentHistoryModal, setShowTreatmentHistoryModal] = useState(false);
   
   const [patients, setPatients] = useState([
     { id: 1, name: 'สมชาย ใจดี', age: 35, hn: 'HN001', tel: '081-234-5678', lastVisit: '2025-10-15' },
     { id: 2, name: 'สมหญิง รักสุข', age: 28, hn: 'HN002', tel: '082-345-6789', lastVisit: '2025-10-16' },
     { id: 3, name: 'วิชัย มีสุข', age: 45, hn: 'HN003', tel: '083-456-7890', lastVisit: '2025-10-17' },
   ]);
+
+  // ข้อมูลผู้ป่วยแบบ hardcoded สำหรับแสดงใน popup
+  const patientDetailsData = {
+    1: {
+      id: 1,
+      first_name: 'สมชาย',
+      last_name: 'ใจดี',
+      birth_date: '1990-05-15',
+      id_card: '1234567890123',
+      gender: 'ชาย',
+      address: '123 ถนนสุขุมวิท แขวงคลองตัน เขตคลองตัน กรุงเทพมหานคร 10110',
+      phone: '081-234-5678',
+      emergency_phone: '082-111-2222',
+      blood_group: 'A',
+      chronic_diseases: 'เบาหวาน, ความดันโลหิตสูง'
+    },
+    2: {
+      id: 2,
+      first_name: 'สมหญิง',
+      last_name: 'รักสุข',
+      birth_date: '1997-08-20',
+      id_card: '2345678901234',
+      gender: 'หญิง',
+      address: '456 ถนนพหลโยธิน แขวงจตุจักร เขตจตุจักร กรุงเทพมหานคร 10900',
+      phone: '082-345-6789',
+      emergency_phone: '083-222-3333',
+      blood_group: 'B',
+      chronic_diseases: 'ไม่มี'
+    },
+    3: {
+      id: 3,
+      first_name: 'วิชัย',
+      last_name: 'มีสุข',
+      birth_date: '1980-03-10',
+      id_card: '3456789012345',
+      gender: 'ชาย',
+      address: '789 ถนนรัชดาภิเษก แขวงห้วยขวาง เขตห้วยขวาง กรุงเทพมหานคร 10310',
+      phone: '083-456-7890',
+      emergency_phone: '084-333-4444',
+      blood_group: 'O',
+      chronic_diseases: 'โรคหัวใจ'
+    }
+  };
 
   const [medicalRecords, setMedicalRecords] = useState([
     { id: 1, patientId: 1, patientName: 'สมชาย ใจดี', date: '2025-10-15', diagnosis: 'ไข้หวัด', treatment: 'พาราเซตามอล 500mg x 3 ครั้ง/วัน', doctor: userData.name },
@@ -141,50 +188,235 @@ const DoctorDashboard = ({ onLogout, userData }) => {
     { id: 2, patientId: 2, patientName: 'สมหญิง รักสุข', date: '2025-10-16', testType: 'ปัสสาวะ', result: 'รอผล', wbc: '-', rbc: '-', hb: '-', platelet: '-' },
   ]);
 
+  // ข้อมูลโรงพยาบาล/สถานที่ส่งตัว (hardcoded - จำลองจาก database)
+  const hospitals = [
+    { id: 1, name: 'โรงพยาบาลกลาง', address: '123 ถนนราชวิถี แขวงทุ่งพญาไท เขตราชเทวี กรุงเทพมหานคร 10400', phone: '02-123-4567' },
+    { id: 2, name: 'โรงพยาบาลจุฬาลงกรณ์', address: '1873 ถนนพระราม 4 แขวงปทุมวัน เขตปทุมวัน กรุงเทพมหานคร 10330', phone: '02-256-4000' },
+    { id: 3, name: 'โรงพยาบาลศิริราช', address: '2 ถนนวังหลัง แขวงศิริราช เขตบางกอกน้อย กรุงเทพมหานคร 10700', phone: '02-419-7000' },
+    { id: 4, name: 'โรงพยาบาลรามาธิบดี', address: '270 ถนนพระราม 6 แขวงทุ่งพญาไท เขตราชเทวี กรุงเทพมหานคร 10400', phone: '02-201-1000' },
+    { id: 5, name: 'โรงพยาบาลบำรุงราษฎร์', address: '33 สุขุมวิท 3 แขวงคลองตัน เขตคลองตัน กรุงเทพมหานคร 10110', phone: '02-011-2222' }
+  ];
+
   const [referrals, setReferrals] = useState([
-    { id: 1, patientId: 1, patientName: 'สมชาย ใจดี', date: '2025-10-10', hospital: 'โรงพยาบาลกลาง', reason: 'สงสัยโรคหัวใจ', status: 'รอติดตาม', doctor: userData.name },
+    { 
+      id: 1, 
+      patientId: 1, 
+      patientName: 'สมชาย ใจดี', 
+      date: '2025-10-10', 
+      hospital: 'โรงพยาบาลกลาง', 
+      hospitalId: 1,
+      reason: 'สงสัยโรคหัวใจ', 
+      status: 'รอติดตาม', 
+      doctor: userData.name,
+      note: 'ผู้ป่วยมีอาการเจ็บหน้าอกและหายใจลำบาก ควรตรวจเพิ่มเติม',
+      urgency: 'ปกติ',
+      department: 'อายุรกรรม'
+    },
   ]);
+
+  // ข้อมูลอาการของผู้ป่วยแต่ละคน (hardcoded)
+  const patientSymptoms = {
+    1: 'มีไข้, ไอ, น้ำมูกไหล, ปวดหัว',
+    2: 'ปวดหัว, เวียนหัว, คลื่นไส้',
+    3: 'เจ็บหน้าอก, หายใจลำบาก, เหนื่อยง่าย'
+  };
+
+  // ข้อมูลยา/การรักษาที่มีในระบบ (hardcoded - จำลองจาก database)
+  const medications = [
+    { id: 1, name: 'พาราเซตามอล 500mg', price: 50, unit: 'เม็ด' },
+    { id: 2, name: 'ยาลดไข้', price: 30, unit: 'เม็ด' },
+    { id: 3, name: 'ยาแก้ไอ', price: 80, unit: 'ขวด' },
+    { id: 4, name: 'ยาแก้ปวด', price: 60, unit: 'เม็ด' },
+    { id: 5, name: 'ยาลดน้ำมูก', price: 70, unit: 'เม็ด' },
+    { id: 6, name: 'ยาลดกรด', price: 40, unit: 'เม็ด' },
+    { id: 7, name: 'ยาคลายกล้ามเนื้อ', price: 90, unit: 'เม็ด' },
+    { id: 8, name: 'ยาปฏิชีวนะ', price: 150, unit: 'เม็ด' },
+    { id: 9, name: 'วิตามินซี', price: 100, unit: 'เม็ด' },
+    { id: 10, name: 'ยาลดความดัน', price: 120, unit: 'เม็ด' }
+  ];
+
+  // ข้อมูลประเภทการตรวจ (hardcoded - จำลองจาก database)
+  const labTestTypes = [
+    { id: 1, name: 'ตรวจเลือด', code: 'BLOOD' },
+    { id: 2, name: 'ตรวจปัสสาวะ', code: 'URINE' },
+    { id: 3, name: 'X-Ray', code: 'XRAY' },
+    { id: 4, name: 'อัลตราซาวด์', code: 'US' },
+    { id: 5, name: 'CT Scan', code: 'CT' },
+    { id: 6, name: 'MRI', code: 'MRI' },
+    { id: 7, name: 'ตรวจคลื่นไฟฟ้าหัวใจ', code: 'ECG' },
+    { id: 8, name: 'ตรวจความหนาแน่นกระดูก', code: 'BMD' }
+  ];
 
   const [formData, setFormData] = useState({
     treatmentPatient: '',
     treatmentSymptoms: '',
     treatmentDiagnosis: '',
+    treatmentMedication: '',
+    treatmentQuantity: '',
     treatmentPlan: '',
     certPatient: '',
     certType: 'ใบรับรองแพทย์ทั่วไป',
     certDetails: '',
     certStartDate: '',
     certEndDate: '',
+    labRequestPatient: '',
+    labRequestTestType: 'ตรวจเลือด',
+    labRequestNote: '',
     labPatient: '',
     labTestType: 'ตรวจเลือด',
     labResult: '',
+    referralPatient: '',
+    referralHospital: '',
+    referralReason: '',
+    referralNote: '',
+    referralUrgency: 'ปกติ',
+    referralDepartment: 'อายุรกรรม',
   });
 
   const handleFormChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    // เมื่อเลือกผู้ป่วย ให้แสดงอาการอัตโนมัติ
+    if (field === 'treatmentPatient' && value) {
+      const symptoms = patientSymptoms[parseInt(value)] || '';
+      setFormData(prev => ({ ...prev, [field]: value, treatmentSymptoms: symptoms }));
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
+  };
+
+  // คำนวณราคารวม
+  const calculateTotalPrice = () => {
+    if (!formData.treatmentMedication || !formData.treatmentQuantity) {
+      return 0;
+    }
+    const medication = medications.find(m => m.id === parseInt(formData.treatmentMedication));
+    if (!medication) return 0;
+    return medication.price * parseInt(formData.treatmentQuantity || 0);
+  };
+
+  const handleViewPatientDetails = (patientId) => {
+    // ใช้ข้อมูลจาก state แทนการเรียก API
+    const details = patientDetailsData[patientId];
+    if (details) {
+      setPatientDetails(details);
+      setShowPatientModal(true);
+    } else {
+      alert('ไม่พบข้อมูลผู้ป่วย');
+    }
+  };
+
+  const handleClosePatientModal = () => {
+    setShowPatientModal(false);
+    setPatientDetails(null);
+  };
+
+  const handleViewTreatmentHistory = () => {
+    setShowPatientModal(false); // ปิด modal ข้อมูลผู้ป่วยก่อน
+    setShowTreatmentHistoryModal(true);
+  };
+
+  const handleCloseTreatmentHistoryModal = () => {
+    setShowTreatmentHistoryModal(false);
+    // กลับไปแสดง modal ข้อมูลผู้ป่วย
+    setShowPatientModal(true);
+  };
+
+  const handleGoToTreatment = () => {
+    setShowPatientModal(false);
+    setPatientDetails(null);
+    setActiveTab('treatment');
+    // ตั้งค่า patient ในฟอร์มบันทึกการรักษา
+    if (patientDetails) {
+      setFormData(prev => ({ ...prev, treatmentPatient: patientDetails.id.toString() }));
+    }
+  };
+
+  const handleViewReferralDetails = (referral) => {
+    setReferralDetails(referral);
+    setShowReferralModal(true);
+  };
+
+  const handleCloseReferralModal = () => {
+    setShowReferralModal(false);
+    setReferralDetails(null);
+  };
+
+  const handleAddReferral = (e) => {
+    e.preventDefault();
+    if (!formData.referralPatient || !formData.referralHospital || !formData.referralReason) {
+      alert('กรุณากรอกข้อมูลให้ครบถ้วน (ผู้ป่วย, โรงพยาบาล, เหตุผล)');
+      return;
+    }
+    
+    const patient = patients.find(p => p.id === parseInt(formData.referralPatient));
+    const hospital = hospitals.find(h => h.name === formData.referralHospital);
+    
+    const newReferral = {
+      id: referrals.length + 1,
+      patientId: patient.id,
+      patientName: patient.name,
+      date: new Date().toISOString().split('T')[0],
+      hospital: formData.referralHospital,
+      hospitalId: hospital?.id || null,
+      reason: formData.referralReason,
+      status: 'รอติดตาม',
+      doctor: userData.name,
+      note: formData.referralNote || '',
+      urgency: formData.referralUrgency,
+      department: formData.referralDepartment
+    };
+    
+    setReferrals([...referrals, newReferral]);
+    setFormData({ 
+      ...formData, 
+      referralPatient: '', 
+      referralHospital: '',
+      referralReason: '',
+      referralNote: '',
+      referralUrgency: 'ปกติ',
+      referralDepartment: 'อายุรกรรม'
+    });
+    alert('บันทึกการส่งตัวสำเร็จ');
   };
 
   const handleAddTreatment = (e) => {
     e.preventDefault();
-    if (!formData.treatmentPatient || !formData.treatmentDiagnosis || !formData.treatmentPlan) {
-      alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+    if (!formData.treatmentPatient || !formData.treatmentDiagnosis || !formData.treatmentMedication || !formData.treatmentQuantity) {
+      alert('กรุณากรอกข้อมูลให้ครบถ้วน (ผู้ป่วย, การวินิจฉัย, ยา, จำนวน)');
       return;
     }
     
     const patient = patients.find(p => p.id === parseInt(formData.treatmentPatient));
+    const medication = medications.find(m => m.id === parseInt(formData.treatmentMedication));
+    const totalPrice = calculateTotalPrice();
+    
+    const treatmentText = medication 
+      ? `${medication.name} x ${formData.treatmentQuantity} ${medication.unit} (ราคา ${totalPrice.toLocaleString()} บาท)`
+      : formData.treatmentPlan;
+    
     const newRecord = {
       id: medicalRecords.length + 1,
       patientId: patient.id,
       patientName: patient.name,
       date: new Date().toISOString().split('T')[0],
       diagnosis: formData.treatmentDiagnosis,
-      treatment: formData.treatmentPlan,
-      doctor: userData.name
+      treatment: formData.treatmentPlan ? `${treatmentText}\nคำแนะนำ: ${formData.treatmentPlan}` : treatmentText,
+      doctor: userData.name,
+      medication: medication?.name,
+      quantity: formData.treatmentQuantity,
+      price: totalPrice
     };
     
     setMedicalRecords([...medicalRecords, newRecord]);
-    setFormData({ ...formData, treatmentPatient: '', treatmentSymptoms: '', treatmentDiagnosis: '', treatmentPlan: '' });
-    alert('บันทึกการรักษาสำเร็จ');
+    setFormData({ 
+      ...formData, 
+      treatmentPatient: '', 
+      treatmentSymptoms: '', 
+      treatmentDiagnosis: '', 
+      treatmentMedication: '',
+      treatmentQuantity: '',
+      treatmentPlan: '' 
+    });
+    alert(`บันทึกการรักษาสำเร็จ\nราคารวม: ${totalPrice.toLocaleString()} บาท`);
   };
 
   const handleCreateCertificate = (e) => {
@@ -194,6 +426,42 @@ const DoctorDashboard = ({ onLogout, userData }) => {
       return;
     }
     alert('ออกใบรับรองแพทย์สำเร็จ\n\nพิมพ์หน้าต่างนี้เพื่อบันทึกเอกสาร');
+  };
+
+  const handleSubmitLabRequest = (e) => {
+    e.preventDefault();
+    if (!formData.labRequestPatient || !formData.labRequestTestType) {
+      alert('กรุณากรอกข้อมูลให้ครบถ้วน (ผู้ป่วย, ประเภทการตรวจ)');
+      return;
+    }
+    
+    const patient = patients.find(p => p.id === parseInt(formData.labRequestPatient));
+    const testType = labTestTypes.find(t => t.name === formData.labRequestTestType);
+    
+    // สร้าง lab result ที่มี status "รอผล"
+    const newLabRequest = {
+      id: labResults.length + 1,
+      patientId: patient.id,
+      patientName: patient.name,
+      date: new Date().toISOString().split('T')[0],
+      testType: formData.labRequestTestType,
+      result: 'รอผล',
+      wbc: '-',
+      rbc: '-',
+      hb: '-',
+      platelet: '-',
+      note: formData.labRequestNote || '',
+      status: 'pending'
+    };
+    
+    setLabResults([...labResults, newLabRequest]);
+    setFormData({ 
+      ...formData, 
+      labRequestPatient: '', 
+      labRequestTestType: 'ตรวจเลือด',
+      labRequestNote: '' 
+    });
+    alert('บันทึกการส่งตรวจสำเร็จ\nสถานะ: รอผล');
   };
 
   const handleAddLabResult = (e) => {
@@ -211,7 +479,8 @@ const DoctorDashboard = ({ onLogout, userData }) => {
       date: new Date().toISOString().split('T')[0],
       testType: formData.labTestType,
       result: formData.labResult,
-      wbc: 7500, rbc: 4.9, hb: 14.0, platelet: 260000
+      wbc: 7500, rbc: 4.9, hb: 14.0, platelet: 260000,
+      status: 'completed'
     };
     
     setLabResults([...labResults, newLab]);
@@ -281,8 +550,11 @@ const DoctorDashboard = ({ onLogout, userData }) => {
       </div>
 
       <div className="max-w-7xl mx-auto p-4">
-        {(activeTab === 'records' || activeTab === 'lab') && (
+        {activeTab === 'records' && (
           <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              ค้นหาเวชระเบียน
+            </label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
               <input
@@ -310,27 +582,12 @@ const DoctorDashboard = ({ onLogout, userData }) => {
                       <p className="text-sm text-gray-500 mt-2">มาล่าสุด: {patient.lastVisit}</p>
                     </div>
                     <button
-                      onClick={() => setSelectedPatient(selectedPatient?.id === patient.id ? null : patient)}
+                      onClick={() => handleViewPatientDetails(patient.id)}
                       className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
                     >
-                      {selectedPatient?.id === patient.id ? 'ซ่อน' : 'ดูเวชระเบียน'}
+                      ดูเวชระเบียน
                     </button>
                   </div>
-                  {selectedPatient?.id === patient.id && (
-                    <div className="mt-4 pt-4 border-t">
-                      <h4 className="font-bold mb-2">ประวัติการรักษา</h4>
-                      {filteredRecords
-                        .filter((r) => r.patientId === patient.id)
-                        .map((record) => (
-                          <div key={record.id} className="bg-gray-50 p-3 rounded mb-2">
-                            <p className="text-sm text-gray-600">{record.date}</p>
-                            <p className="font-medium">การวินิจฉัย: {record.diagnosis}</p>
-                            <p className="text-sm">การรักษา: {record.treatment}</p>
-                            <p className="text-sm text-gray-600">โดย: {record.doctor}</p>
-                          </div>
-                        ))}
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
@@ -362,7 +619,7 @@ const DoctorDashboard = ({ onLogout, userData }) => {
                   onChange={(e) => handleFormChange('treatmentSymptoms', e.target.value)}
                   className="w-full border rounded-lg px-4 py-2"
                   rows="3"
-                  placeholder="ระบุอาการสำคัญ"
+                  placeholder="ระบุอาการสำคัญ (จะแสดงอัตโนมัติเมื่อเลือกผู้ป่วย)"
                 />
               </div>
               <div>
@@ -377,14 +634,61 @@ const DoctorDashboard = ({ onLogout, userData }) => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">การรักษา/ยา *</label>
+                <label className="block text-sm font-medium mb-2">ยา/การรักษา *</label>
+                <select
+                  value={formData.treatmentMedication}
+                  onChange={(e) => handleFormChange('treatmentMedication', e.target.value)}
+                  className="w-full border rounded-lg px-4 py-2 mb-2"
+                  required
+                >
+                  <option value="">เลือกยา/การรักษา...</option>
+                  {medications.map((med) => (
+                    <option key={med.id} value={med.id}>
+                      {med.name} - {med.price.toLocaleString()} บาท/{med.unit}
+                    </option>
+                  ))}
+                </select>
+                {formData.treatmentMedication && (
+                  <div className="grid grid-cols-2 gap-4 mt-2">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">จำนวน *</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={formData.treatmentQuantity}
+                        onChange={(e) => handleFormChange('treatmentQuantity', e.target.value)}
+                        className="w-full border rounded-lg px-4 py-2"
+                        placeholder="จำนวน"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">ราคารวม</label>
+                      <div className="w-full border rounded-lg px-4 py-2 bg-gray-50">
+                        <span className="text-lg font-bold text-blue-600">
+                          {calculateTotalPrice().toLocaleString()} บาท
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {formData.treatmentMedication && formData.treatmentQuantity && (
+                  <div className="mt-2 text-sm text-gray-600">
+                    <p>
+                      {medications.find(m => m.id === parseInt(formData.treatmentMedication))?.name} 
+                      {' '}x {formData.treatmentQuantity} {medications.find(m => m.id === parseInt(formData.treatmentMedication))?.unit}
+                    </p>
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">คำแนะนำเพิ่มเติม</label>
                 <textarea
                   value={formData.treatmentPlan}
                   onChange={(e) => handleFormChange('treatmentPlan', e.target.value)}
                   className="w-full border rounded-lg px-4 py-2"
-                  rows="4"
-                  placeholder="ระบุการรักษาและยา"
-                  required
+                  rows="3"
+                  placeholder="ระบุคำแนะนำเพิ่มเติม (ถ้ามี)"
                 />
               </div>
               <button type="submit" className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-medium">
@@ -467,6 +771,54 @@ const DoctorDashboard = ({ onLogout, userData }) => {
         {activeTab === 'lab' && (
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-2xl font-bold mb-6 text-gray-800">การส่งตรวจ</h2>
+              <form onSubmit={handleSubmitLabRequest} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">เลือกผู้ป่วย *</label>
+                    <select
+                      value={formData.labRequestPatient}
+                      onChange={(e) => handleFormChange('labRequestPatient', e.target.value)}
+                      className="w-full border rounded-lg px-4 py-2"
+                      required
+                    >
+                      <option value="">เลือกผู้ป่วย...</option>
+                      {patients.map((p) => (
+                        <option key={p.id} value={p.id}>{p.name} ({p.hn})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">ประเภทการตรวจ *</label>
+                    <select
+                      value={formData.labRequestTestType}
+                      onChange={(e) => handleFormChange('labRequestTestType', e.target.value)}
+                      className="w-full border rounded-lg px-4 py-2"
+                      required
+                    >
+                      {labTestTypes.map((test) => (
+                        <option key={test.id} value={test.name}>{test.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">หมายเหตุ (ถ้ามี)</label>
+                  <textarea
+                    value={formData.labRequestNote}
+                    onChange={(e) => handleFormChange('labRequestNote', e.target.value)}
+                    className="w-full border rounded-lg px-4 py-2"
+                    rows="3"
+                    placeholder="ระบุหมายเหตุเพิ่มเติม (ถ้ามี)"
+                  />
+                </div>
+                <button type="submit" className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-medium">
+                  ส่งตรวจ
+                </button>
+              </form>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-2xl font-bold mb-6 text-gray-800">เพิ่มผลการตรวจ</h2>
               <form onSubmit={handleAddLabResult} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -491,10 +843,9 @@ const DoctorDashboard = ({ onLogout, userData }) => {
                       onChange={(e) => handleFormChange('labTestType', e.target.value)}
                       className="w-full border rounded-lg px-4 py-2"
                     >
-                      <option>ตรวจเลือด</option>
-                      <option>ตรวจปัสสาวะ</option>
-                      <option>X-Ray</option>
-                      <option>อื่นๆ</option>
+                      {labTestTypes.map((test) => (
+                        <option key={test.id} value={test.name}>{test.name}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -517,13 +868,33 @@ const DoctorDashboard = ({ onLogout, userData }) => {
 
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-2xl font-bold mb-6 text-gray-800">ผลการตรวจเลือดและสารคัดหลั่ง</h2>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ค้นหาผลแล็บ
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="ค้นหา (ชื่อ, HN, เบอร์โทร, ประเภทการตรวจ)"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
               <div className="grid gap-4">
-                {filteredLabs.map((lab) => (
+                {filteredLabs.map((lab) => {
+                  const patient = patients.find(p => p.id === lab.patientId);
+                  return (
                   <div key={lab.id} className="border rounded-lg p-4">
-                    <h3 className="font-bold text-lg mb-3">{lab.patientName} ({patients.find(p => p.patientId === lab.id)?.hn})</h3>
+                    <h3 className="font-bold text-lg mb-3">{lab.patientName} ({patient?.hn || ''})</h3>
                     <div className="bg-blue-50 p-4 rounded-lg">
                       <p className="font-medium mb-2">{lab.testType} - {lab.date}</p>
                       <p className="text-sm mb-3">สถานะ: <span className={lab.result === 'ปกติ' ? 'text-green-600 font-semibold' : 'text-yellow-600 font-semibold'}>{lab.result}</span></p>
+                      {lab.note && (
+                        <p className="text-sm text-gray-600 mb-3">หมายเหตุ: {lab.note}</p>
+                      )}
                       {lab.result === 'ปกติ' && (
                         <div className="grid grid-cols-2 gap-3 text-sm">
                           <div><span className="text-gray-600">WBC:</span> <span className="font-medium">{lab.wbc} cells/μL</span></div>
@@ -534,38 +905,414 @@ const DoctorDashboard = ({ onLogout, userData }) => {
                       )}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
         )}
 
         {activeTab === 'referral' && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-bold mb-6 text-gray-800">ประวัติการส่งตัวผู้ป่วย</h2>
-            <div className="space-y-4">
-              {referrals.map((ref) => (
-                <div key={ref.id} className="border rounded-lg p-4 bg-orange-50">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-bold text-lg">{ref.patientName}</h3>
-                      <p className="text-gray-600">ส่งตัวไปยัง: {ref.hospital}</p>
-                      <p className="text-sm text-gray-500 mt-2">วันที่: {ref.date}</p>
-                      <p className="text-sm">เหตุผล: {ref.reason}</p>
-                      <p className="text-sm text-gray-600">โดย: {ref.doctor}</p>
-                    </div>
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      ref.status === 'รอติดตาม' ? 'bg-orange-200 text-orange-800' : 'bg-green-200 text-green-800'
-                    }`}>
-                      {ref.status}
-                    </span>
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-2xl font-bold mb-6 text-gray-800">ส่งตัวผู้ป่วย</h2>
+              <form onSubmit={handleAddReferral} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">เลือกผู้ป่วย *</label>
+                    <select
+                      value={formData.referralPatient}
+                      onChange={(e) => handleFormChange('referralPatient', e.target.value)}
+                      className="w-full border rounded-lg px-4 py-2"
+                      required
+                    >
+                      <option value="">เลือกผู้ป่วย...</option>
+                      {patients.map((p) => (
+                        <option key={p.id} value={p.id}>{p.name} ({p.hn})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">โรงพยาบาล/สถานที่ *</label>
+                    <select
+                      value={formData.referralHospital}
+                      onChange={(e) => handleFormChange('referralHospital', e.target.value)}
+                      className="w-full border rounded-lg px-4 py-2"
+                      required
+                    >
+                      <option value="">เลือกโรงพยาบาล...</option>
+                      {hospitals.map((h) => (
+                        <option key={h.id} value={h.name}>{h.name}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
-              ))}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">ความเร่งด่วน</label>
+                    <select
+                      value={formData.referralUrgency}
+                      onChange={(e) => handleFormChange('referralUrgency', e.target.value)}
+                      className="w-full border rounded-lg px-4 py-2"
+                    >
+                      <option value="ปกติ">ปกติ</option>
+                      <option value="ด่วน">ด่วน</option>
+                      <option value="ด่วนมาก">ด่วนมาก</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">แผนก</label>
+                    <select
+                      value={formData.referralDepartment}
+                      onChange={(e) => handleFormChange('referralDepartment', e.target.value)}
+                      className="w-full border rounded-lg px-4 py-2"
+                    >
+                      <option value="อายุรกรรม">อายุรกรรม</option>
+                      <option value="ศัลยกรรม">ศัลยกรรม</option>
+                      <option value="กุมารเวชกรรม">กุมารเวชกรรม</option>
+                      <option value="สูติ-นรีเวชกรรม">สูติ-นรีเวชกรรม</option>
+                      <option value="จักษุวิทยา">จักษุวิทยา</option>
+                      <option value="หูคอจมูก">หูคอจมูก</option>
+                      <option value="ออร์โธปิดิกส์">ออร์โธปิดิกส์</option>
+                      <option value="อื่นๆ">อื่นๆ</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">เหตุผลการส่งตัว *</label>
+                  <textarea
+                    value={formData.referralReason}
+                    onChange={(e) => handleFormChange('referralReason', e.target.value)}
+                    className="w-full border rounded-lg px-4 py-2"
+                    rows="3"
+                    placeholder="ระบุเหตุผลการส่งตัว"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">หมายเหตุเพิ่มเติม</label>
+                  <textarea
+                    value={formData.referralNote}
+                    onChange={(e) => handleFormChange('referralNote', e.target.value)}
+                    className="w-full border rounded-lg px-4 py-2"
+                    rows="3"
+                    placeholder="ระบุหมายเหตุเพิ่มเติม (ถ้ามี)"
+                  />
+                </div>
+                <button type="submit" className="bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 font-medium">
+                  บันทึกการส่งตัว
+                </button>
+              </form>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-2xl font-bold mb-6 text-gray-800">ประวัติการส่งตัวผู้ป่วย</h2>
+              <div className="space-y-4">
+                {referrals.map((ref) => {
+                  const patient = patients.find(p => p.id === ref.patientId);
+                  return (
+                    <div 
+                      key={ref.id} 
+                      className="border rounded-lg p-4 bg-orange-50 hover:bg-orange-100 cursor-pointer transition-colors"
+                      onClick={() => handleViewReferralDetails(ref)}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-bold text-lg">{ref.patientName} ({patient?.hn || ''})</h3>
+                          <p className="text-gray-600">ส่งตัวไปยัง: {ref.hospital}</p>
+                          <p className="text-sm text-gray-500 mt-2">วันที่: {ref.date}</p>
+                          <p className="text-sm">เหตุผล: {ref.reason}</p>
+                          <p className="text-sm text-gray-600">โดย: {ref.doctor}</p>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          ref.status === 'รอติดตาม' ? 'bg-orange-200 text-orange-800' : 'bg-green-200 text-green-800'
+                        }`}>
+                          {ref.status}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Referral Details Modal */}
+        {showReferralModal && referralDetails && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleCloseReferralModal}>
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-800">รายละเอียดการส่งตัว</h2>
+                <button 
+                  onClick={handleCloseReferralModal}
+                  className="text-gray-500 hover:text-gray-700 text-3xl leading-none"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <div className="p-6 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">ชื่อผู้ป่วย</label>
+                    <p className="text-gray-900 bg-gray-50 p-2 rounded">{referralDetails.patientName}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">HN</label>
+                    <p className="text-gray-900 bg-gray-50 p-2 rounded">
+                      {patients.find(p => p.id === referralDetails.patientId)?.hn || '-'}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">วันส่งตัว</label>
+                  <p className="text-gray-900 bg-gray-50 p-2 rounded">{referralDetails.date}</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">โรงพยาบาล/สถานที่</label>
+                  <p className="text-gray-900 bg-gray-50 p-2 rounded">{referralDetails.hospital}</p>
+                  {referralDetails.hospitalId && (() => {
+                    const hospital = hospitals.find(h => h.id === referralDetails.hospitalId);
+                    return hospital ? (
+                      <div className="mt-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                        <p>ที่อยู่: {hospital.address}</p>
+                        <p>โทร: {hospital.phone}</p>
+                      </div>
+                    ) : null;
+                  })()}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">แผนก</label>
+                    <p className="text-gray-900 bg-gray-50 p-2 rounded">{referralDetails.department || '-'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">ความเร่งด่วน</label>
+                    <p className="text-gray-900 bg-gray-50 p-2 rounded">{referralDetails.urgency || '-'}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">เหตุผลการส่งตัว</label>
+                  <p className="text-gray-900 bg-gray-50 p-2 rounded whitespace-pre-wrap">{referralDetails.reason}</p>
+                </div>
+
+                {referralDetails.note && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">หมายเหตุ</label>
+                    <p className="text-gray-900 bg-gray-50 p-2 rounded whitespace-pre-wrap">{referralDetails.note}</p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">สถานะ</label>
+                    <p className="text-gray-900 bg-gray-50 p-2 rounded">{referralDetails.status}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">แพทย์ผู้ส่งตัว</label>
+                    <p className="text-gray-900 bg-gray-50 p-2 rounded">{referralDetails.doctor}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="sticky bottom-0 bg-gray-50 border-t px-6 py-4 flex justify-end">
+                <button
+                  onClick={handleCloseReferralModal}
+                  className="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 font-medium"
+                >
+                  ปิด
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Treatment History Modal */}
+        {showTreatmentHistoryModal && patientDetails && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]" onClick={handleCloseTreatmentHistoryModal}>
+            <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-800">
+                  ประวัติการรักษา - {patientDetails.first_name} {patientDetails.last_name}
+                </h2>
+                <button 
+                  onClick={handleCloseTreatmentHistoryModal}
+                  className="text-gray-500 hover:text-gray-700 text-3xl leading-none"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <div className="p-6">
+                {(() => {
+                  const patientRecords = medicalRecords.filter(r => r.patientId === patientDetails.id);
+                  if (patientRecords.length === 0) {
+                    return (
+                      <div className="text-center py-8 text-gray-500">
+                        <p>ยังไม่มีประวัติการรักษา</p>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="space-y-4">
+                      {patientRecords.map((record) => (
+                        <div key={record.id} className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
+                          <div className="flex justify-between items-start mb-3">
+                            <div>
+                              <h3 className="font-bold text-lg text-gray-800">วันที่: {record.date}</h3>
+                              <p className="text-sm text-gray-600">โดย: {record.doctor}</p>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">การวินิจฉัย</label>
+                              <p className="text-gray-900 bg-white p-2 rounded">{record.diagnosis}</p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">การรักษา/ยา</label>
+                              <p className="text-gray-900 bg-white p-2 rounded whitespace-pre-wrap">{record.treatment}</p>
+                            </div>
+                            {record.medication && (
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">ยา</label>
+                                  <p className="text-gray-900 bg-white p-2 rounded">{record.medication}</p>
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">จำนวน</label>
+                                  <p className="text-gray-900 bg-white p-2 rounded">{record.quantity}</p>
+                                </div>
+                              </div>
+                            )}
+                            {record.price && (
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">ราคารวม</label>
+                                <p className="text-gray-900 bg-white p-2 rounded font-semibold text-blue-600">
+                                  {record.price.toLocaleString()} บาท
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+              
+              <div className="sticky bottom-0 bg-gray-50 border-t px-6 py-4 flex justify-end">
+                <button
+                  onClick={handleCloseTreatmentHistoryModal}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                >
+                  ปิด
+                </button>
+              </div>
             </div>
           </div>
         )}
       </div>
+
+      {/* Patient Details Modal */}
+      {showPatientModal && patientDetails && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleClosePatientModal}>
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-gray-800">ข้อมูลผู้ป่วย</h2>
+              <button 
+                onClick={handleClosePatientModal}
+                className="text-gray-500 hover:text-gray-700 text-3xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">ชื่อ</label>
+                  <p className="text-gray-900 bg-gray-50 p-2 rounded">{patientDetails.first_name || '-'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">นามสกุล</label>
+                  <p className="text-gray-900 bg-gray-50 p-2 rounded">{patientDetails.last_name || '-'}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">วันเกิด</label>
+                  <p className="text-gray-900 bg-gray-50 p-2 rounded">{patientDetails.birth_date || '-'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">เลขบัตรประชาชน</label>
+                  <p className="text-gray-900 bg-gray-50 p-2 rounded">{patientDetails.id_card || '-'}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">เพศ</label>
+                  <p className="text-gray-900 bg-gray-50 p-2 rounded">{patientDetails.gender || '-'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">กรุปเลือด</label>
+                  <p className="text-gray-900 bg-gray-50 p-2 rounded">{patientDetails.blood_group || '-'}</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">ที่อยู่</label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded whitespace-pre-wrap">{patientDetails.address || '-'}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">เบอร์โทร</label>
+                  <p className="text-gray-900 bg-gray-50 p-2 rounded">{patientDetails.phone || '-'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">เบอร์โทรฉุกเฉิน</label>
+                  <p className="text-gray-900 bg-gray-50 p-2 rounded">{patientDetails.emergency_phone || '-'}</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">โรคประจำตัว</label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded whitespace-pre-wrap">{patientDetails.chronic_diseases || '-'}</p>
+              </div>
+            </div>
+            
+            <div className="sticky bottom-0 bg-gray-50 border-t px-6 py-4 flex justify-between">
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleViewTreatmentHistory}
+                  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
+                >
+                  ประวัติการรักษา
+                </button>
+                <button
+                  onClick={handleGoToTreatment}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                >
+                  บันทึกการรักษา
+                </button>
+              </div>
+              <button
+                onClick={handleClosePatientModal}
+                className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-medium"
+              >
+                ปิด
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -593,8 +1340,15 @@ const StaffDashboard = ({ onLogout, userData }) => {
 
   const [showAddPatient, setShowAddPatient] = useState(false);
   const [showAddAppointment, setShowAddAppointment] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState(null);
+  const [showPatientModal, setShowPatientModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    firstName: '', lastName: '', birthDate: '', gender: '', idCard: '', tel: '', email: '', address: ''
+  });
   const [formData, setFormData] = useState({
-    patientName: '', patientAge: '', patientHN: '', patientTel: '',
+    patientFirstName: '', patientLastName: '', patientBirthDate: '', patientGender: '', patientIdCard: '', 
+    patientTel: '', patientEmail: '', patientAddress: '',
     appointPatient: '', appointDate: '', appointTime: '', appointType: 'ตรวจรักษาทั่วไป',
     paymentPatient: '', paymentAmount: '', paymentMethod: 'เงินสด', paymentService: 'ตรวจรักษาทั่วไป'
   });
@@ -603,24 +1357,131 @@ const StaffDashboard = ({ onLogout, userData }) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handlePatientClick = (patient) => {
+    setSelectedPatient(patient);
+    const nameParts = patient.name.split(' ');
+    setEditFormData({
+      firstName: nameParts[0] || '',
+      lastName: nameParts.slice(1).join(' ') || '',
+      birthDate: patient.birthDate || '',
+      gender: patient.gender || '',
+      idCard: patient.idCard || '',
+      tel: patient.tel || '',
+      email: patient.email || '',
+      address: patient.address || ''
+    });
+    setIsEditing(false);
+    setShowPatientModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowPatientModal(false);
+    setSelectedPatient(null);
+    setIsEditing(false);
+  };
+
+  const handleEditClick = () => {
+    setIsEditing(true);
+  };
+
+  const handleEditFormChange = (field, value) => {
+    setEditFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveEdit = () => {
+    if (!editFormData.firstName || !editFormData.lastName || !editFormData.birthDate || !editFormData.tel) {
+      alert('กรุณากรอกข้อมูลให้ครบถ้วน (ชื่อ, นามสกุล, วันเกิด, เบอร์โทร)');
+      return;
+    }
+
+    // คำนวณอายุจากวันเกิด
+    const birthDate = new Date(editFormData.birthDate);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+
+    const updatedPatient = {
+      ...selectedPatient,
+      name: `${editFormData.firstName} ${editFormData.lastName}`,
+      age: age,
+      birthDate: editFormData.birthDate,
+      gender: editFormData.gender || '',
+      idCard: editFormData.idCard || '',
+      tel: editFormData.tel,
+      email: editFormData.email || '',
+      address: editFormData.address || ''
+    };
+
+    const updatedPatientsList = patients.map(p => 
+      p.id === selectedPatient.id ? updatedPatient : p
+    );
+    
+    setPatients(updatedPatientsList);
+    setSelectedPatient(updatedPatient);
+    setIsEditing(false);
+    alert('บันทึกการแก้ไขสำเร็จ');
+  };
+
+  const handleCancelEdit = () => {
+    const nameParts = selectedPatient.name.split(' ');
+    setEditFormData({
+      firstName: nameParts[0] || '',
+      lastName: nameParts.slice(1).join(' ') || '',
+      birthDate: selectedPatient.birthDate || '',
+      gender: selectedPatient.gender || '',
+      idCard: selectedPatient.idCard || '',
+      tel: selectedPatient.tel || '',
+      email: selectedPatient.email || '',
+      address: selectedPatient.address || ''
+    });
+    setIsEditing(false);
+  };
+
   const handleAddPatient = (e) => {
     e.preventDefault();
-    if (!formData.patientName || !formData.patientAge || !formData.patientHN || !formData.patientTel) {
-      alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+    if (!formData.patientFirstName || !formData.patientLastName || !formData.patientBirthDate || !formData.patientTel) {
+      alert('กรุณากรอกข้อมูลให้ครบถ้วน (ชื่อ, นามสกุล, วันเกิด, เบอร์โทร)');
       return;
+    }
+    
+    // คำนวณอายุจากวันเกิด
+    const birthDate = new Date(formData.patientBirthDate);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
     }
     
     const newPatient = {
       id: patients.length + 1,
-      name: formData.patientName,
-      age: parseInt(formData.patientAge),
-      hn: formData.patientHN,
+      name: `${formData.patientFirstName} ${formData.patientLastName}`,
+      age: age,
+      birthDate: formData.patientBirthDate,
+      gender: formData.patientGender || '',
+      idCard: formData.patientIdCard || '',
       tel: formData.patientTel,
+      email: formData.patientEmail || '',
+      address: formData.patientAddress || '',
+      hn: `HN${String(patients.length + 1).padStart(3, '0')}`,
       lastVisit: new Date().toISOString().split('T')[0]
     };
     
     setPatients([...patients, newPatient]);
-    setFormData({ ...formData, patientName: '', patientAge: '', patientHN: '', patientTel: '' });
+    setFormData({ 
+      ...formData, 
+      patientFirstName: '', 
+      patientLastName: '', 
+      patientBirthDate: '', 
+      patientGender: '', 
+      patientIdCard: '', 
+      patientTel: '', 
+      patientEmail: '', 
+      patientAddress: '' 
+    });
     setShowAddPatient(false);
     alert('เพิ่มผู้ป่วยสำเร็จ');
   };
@@ -649,7 +1510,7 @@ const StaffDashboard = ({ onLogout, userData }) => {
 
   const handleAddPayment = (e) => {
     e.preventDefault();
-    if (!formData.paymentPatient || !formData.paymentAmount) {
+    if (!formData.paymentPatient) {
       alert('กรุณากรอกข้อมูลให้ครบถ้วน');
       return;
     }
@@ -659,12 +1520,12 @@ const StaffDashboard = ({ onLogout, userData }) => {
       patientName: formData.paymentPatient,
       date: new Date().toISOString().split('T')[0],
       service: formData.paymentService,
-      amount: parseInt(formData.paymentAmount),
+      amount: 0,
       method: formData.paymentMethod
     };
     
     setPayments([...payments, newPayment]);
-    setFormData({ ...formData, paymentPatient: '', paymentAmount: '' });
+    setFormData({ ...formData, paymentPatient: '' });
     alert('บันทึกการชำระเงินสำเร็จ');
   };
 
@@ -704,8 +1565,10 @@ const StaffDashboard = ({ onLogout, userData }) => {
   );
 
   const filteredAppointments = appointments.filter(a =>
-    a.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    a.type.toLowerCase().includes(searchTerm.toLowerCase())
+    a.status !== 'ยืนยันแล้ว' && (
+      a.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      a.type.toLowerCase().includes(searchTerm.toLowerCase())
+    )
   );
 
   const filteredPayments = payments.filter(p =>
@@ -758,6 +1621,9 @@ const StaffDashboard = ({ onLogout, userData }) => {
 
       <div className="max-w-7xl mx-auto p-4">
         <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {activeTab === 'patients' ? 'ค้นหาผู้ป่วย' : activeTab === 'appointments' ? 'ค้นหาการนัดหมาย' : 'ค้นหาการชำระเงิน'}
+          </label>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
             <input
@@ -784,71 +1650,316 @@ const StaffDashboard = ({ onLogout, userData }) => {
             
             {showAddPatient && (
               <div className="mb-6 p-4 bg-green-50 rounded-lg">
-                <h3 className="font-bold mb-4">เพิ่มผู้ป่วยใหม่</h3>
-                <form onSubmit={handleAddPatient} className="grid grid-cols-2 gap-4">
-                  <input
-                    type="text"
-                    value={formData.patientName}
-                    onChange={(e) => handleFormChange('patientName', e.target.value)}
-                    placeholder="ชื่อ-นามสกุล *"
-                    className="border rounded-lg px-4 py-2"
-                    required
-                  />
-                  <input
-                    type="number"
-                    value={formData.patientAge}
-                    onChange={(e) => handleFormChange('patientAge', e.target.value)}
-                    placeholder="อายุ *"
-                    className="border rounded-lg px-4 py-2"
-                    required
-                  />
-                  <input
-                    type="text"
-                    value={formData.patientHN}
-                    onChange={(e) => handleFormChange('patientHN', e.target.value)}
-                    placeholder="HN *"
-                    className="border rounded-lg px-4 py-2"
-                    required
-                  />
-                  <input
-                    type="text"
-                    value={formData.patientTel}
-                    onChange={(e) => handleFormChange('patientTel', e.target.value)}
-                    placeholder="เบอร์โทร *"
-                    className="border rounded-lg px-4 py-2"
-                    required
-                  />
-                  <button type="submit" className="col-span-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                <h3 className="font-bold mb-4 text-left">เพิ่มผู้ป่วยใหม่</h3>
+                <form onSubmit={handleAddPatient} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">ชื่อ *</label>
+                      <input
+                        type="text"
+                        value={formData.patientFirstName}
+                        onChange={(e) => handleFormChange('patientFirstName', e.target.value)}
+                        className="w-full border rounded-lg px-4 py-2"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">นามสกุล *</label>
+                      <input
+                        type="text"
+                        value={formData.patientLastName}
+                        onChange={(e) => handleFormChange('patientLastName', e.target.value)}
+                        className="w-full border rounded-lg px-4 py-2"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">วันเกิด *</label>
+                      <input
+                        type="date"
+                        value={formData.patientBirthDate}
+                        onChange={(e) => handleFormChange('patientBirthDate', e.target.value)}
+                        className="w-full border rounded-lg px-4 py-2"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">เพศ</label>
+                      <select
+                        value={formData.patientGender}
+                        onChange={(e) => handleFormChange('patientGender', e.target.value)}
+                        className="w-full border rounded-lg px-4 py-2"
+                      >
+                        <option value="">เลือกเพศ</option>
+                        <option value="ชาย">ชาย</option>
+                        <option value="หญิง">หญิง</option>
+                        <option value="อื่นๆ">อื่นๆ</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">เลขบัตรประชาชน</label>
+                      <input
+                        type="text"
+                        value={formData.patientIdCard}
+                        onChange={(e) => handleFormChange('patientIdCard', e.target.value)}
+                        className="w-full border rounded-lg px-4 py-2"
+                        maxLength="13"
+                        placeholder="13 หลัก"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">เบอร์โทร *</label>
+                      <input
+                        type="text"
+                        value={formData.patientTel}
+                        onChange={(e) => handleFormChange('patientTel', e.target.value)}
+                        className="w-full border rounded-lg px-4 py-2"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">อีเมล</label>
+                    <input
+                      type="email"
+                      value={formData.patientEmail}
+                      onChange={(e) => handleFormChange('patientEmail', e.target.value)}
+                      className="w-full border rounded-lg px-4 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">ที่อยู่</label>
+                    <textarea
+                      value={formData.patientAddress}
+                      onChange={(e) => handleFormChange('patientAddress', e.target.value)}
+                      className="w-full border rounded-lg px-4 py-2"
+                      rows="3"
+                      placeholder="กรอกที่อยู่"
+                    />
+                  </div>
+                  <button type="submit" className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
                     บันทึกผู้ป่วย
                   </button>
                 </form>
               </div>
             )}
 
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">HN</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">ชื่อ-นามสกุล</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">อายุ</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">เบอร์โทร</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">มาล่าสุด</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {filteredPatients.map((patient) => (
-                    <tr key={patient.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3">{patient.hn}</td>
-                      <td className="px-4 py-3 font-medium">{patient.name}</td>
-                      <td className="px-4 py-3">{patient.age}</td>
-                      <td className="px-4 py-3">{patient.tel}</td>
-                      <td className="px-4 py-3">{patient.lastVisit}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="grid gap-4">
+              {filteredPatients.map((patient) => (
+                <div 
+                  key={patient.id} 
+                  className="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => handlePatientClick(patient)}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-start space-x-4 flex-1">
+                      <div className="bg-green-100 rounded-full w-16 h-16 flex items-center justify-center">
+                        <User size={32} className="text-green-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-lg text-gray-800">{patient.name}</h3>
+                        <p className="text-gray-600">HN: {patient.hn} | อายุ: {patient.age} ปี</p>
+                        <p className="text-gray-600">โทร: {patient.tel}</p>
+                        {patient.email && <p className="text-gray-600">อีเมล: {patient.email}</p>}
+                        <p className="text-sm text-gray-500 mt-2">มาล่าสุด: {patient.lastVisit}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
+
+            {showPatientModal && selectedPatient && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleCloseModal}>
+                <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold text-gray-800">รายละเอียดผู้ป่วย</h2>
+                    <button 
+                      onClick={handleCloseModal}
+                      className="text-gray-500 hover:text-gray-700 text-2xl"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">ชื่อ *</label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editFormData.firstName}
+                          onChange={(e) => handleEditFormChange('firstName', e.target.value)}
+                          className="w-full border rounded-lg px-4 py-2"
+                          required
+                        />
+                      ) : (
+                        <p className="text-gray-900">{selectedPatient.name?.split(' ')[0] || '-'}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">นามสกุล *</label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editFormData.lastName}
+                          onChange={(e) => handleEditFormChange('lastName', e.target.value)}
+                          className="w-full border rounded-lg px-4 py-2"
+                          required
+                        />
+                      ) : (
+                        <p className="text-gray-900">{selectedPatient.name?.split(' ').slice(1).join(' ') || '-'}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">วันเกิด *</label>
+                      {isEditing ? (
+                        <input
+                          type="date"
+                          value={editFormData.birthDate}
+                          onChange={(e) => handleEditFormChange('birthDate', e.target.value)}
+                          className="w-full border rounded-lg px-4 py-2"
+                          required
+                        />
+                      ) : (
+                        <p className="text-gray-900">{selectedPatient.birthDate || '-'}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">อายุ</label>
+                      <p className="text-gray-900">{selectedPatient.age ? `${selectedPatient.age} ปี` : '-'}</p>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">เพศ</label>
+                      {isEditing ? (
+                        <select
+                          value={editFormData.gender}
+                          onChange={(e) => handleEditFormChange('gender', e.target.value)}
+                          className="w-full border rounded-lg px-4 py-2"
+                        >
+                          <option value="">เลือกเพศ</option>
+                          <option value="ชาย">ชาย</option>
+                          <option value="หญิง">หญิง</option>
+                          <option value="อื่นๆ">อื่นๆ</option>
+                        </select>
+                      ) : (
+                        <p className="text-gray-900">{selectedPatient.gender || '-'}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">เลขบัตรประชาชน</label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editFormData.idCard}
+                          onChange={(e) => handleEditFormChange('idCard', e.target.value)}
+                          className="w-full border rounded-lg px-4 py-2"
+                          maxLength="13"
+                        />
+                      ) : (
+                        <p className="text-gray-900">{selectedPatient.idCard || '-'}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">HN</label>
+                      <p className="text-gray-900">{selectedPatient.hn || '-'}</p>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">เบอร์โทร *</label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editFormData.tel}
+                          onChange={(e) => handleEditFormChange('tel', e.target.value)}
+                          className="w-full border rounded-lg px-4 py-2"
+                          required
+                        />
+                      ) : (
+                        <p className="text-gray-900">{selectedPatient.tel || '-'}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">อีเมล</label>
+                      {isEditing ? (
+                        <input
+                          type="email"
+                          value={editFormData.email}
+                          onChange={(e) => handleEditFormChange('email', e.target.value)}
+                          className="w-full border rounded-lg px-4 py-2"
+                        />
+                      ) : (
+                        <p className="text-gray-900">{selectedPatient.email || '-'}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">ที่อยู่</label>
+                      {isEditing ? (
+                        <textarea
+                          value={editFormData.address}
+                          onChange={(e) => handleEditFormChange('address', e.target.value)}
+                          className="w-full border rounded-lg px-4 py-2"
+                          rows="3"
+                        />
+                      ) : (
+                        <p className="text-gray-900 whitespace-pre-wrap">{selectedPatient.address || '-'}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">มาล่าสุด</label>
+                      <p className="text-gray-900">{selectedPatient.lastVisit || '-'}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6 flex justify-end space-x-3">
+                    {isEditing ? (
+                      <>
+                        <button
+                          onClick={handleCancelEdit}
+                          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
+                        >
+                          ยกเลิก
+                        </button>
+                        <button
+                          onClick={handleSaveEdit}
+                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
+                        >
+                          บันทึก
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={handleEditClick}
+                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
+                        >
+                          แก้ไข
+                        </button>
+                        <button
+                          onClick={handleCloseModal}
+                          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
+                        >
+                          ปิด
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -961,14 +2072,6 @@ const StaffDashboard = ({ onLogout, userData }) => {
                     <option>ตรวจสารคัดหลั่ง</option>
                     <option>ใบรับรองแพทย์</option>
                   </select>
-                  <input
-                    type="number"
-                    value={formData.paymentAmount}
-                    onChange={(e) => handleFormChange('paymentAmount', e.target.value)}
-                    placeholder="จำนวนเงิน (บาท) *"
-                    className="w-full border rounded-lg px-4 py-2"
-                    required
-                  />
                   <select
                     value={formData.paymentMethod}
                     onChange={(e) => handleFormChange('paymentMethod', e.target.value)}
@@ -1020,8 +2123,8 @@ const OwnerDashboard = ({ onLogout, userData }) => {
   const [searchTerm, setSearchTerm] = useState('');
   
   const [staff, setStaff] = useState([
-    { id: 1, name: 'สมศรี พนักงานดี', position: 'พนักงานต้อนรับ', tel: '081-111-2222', startDate: '2023-01-15', salary: 15000 },
-    { id: 2, name: 'วิไล ช่วยเหลือ', position: 'เจ้าหน้าที่การเงิน', tel: '082-222-3333', startDate: '2023-03-20', salary: 18000 },
+    { id: 1, firstName: 'สมศรี', lastName: 'พนักงานดี', name: 'สมศรี พนักงานดี', position: 'พนักงานคลินิก', tel: '081-111-2222', email: 'somsri@clinic.com', startDate: '2023-01-15', salary: 15000, username: 'somsri001', password: 'p@ssw0rd1', status: 'active' },
+    { id: 2, firstName: 'วิไล', lastName: 'ช่วยเหลือ', name: 'วิไล ช่วยเหลือ', position: 'พนักงานคลินิก', tel: '082-222-3333', email: 'wilai@clinic.com', startDate: '2023-03-20', salary: 18000, username: 'wilai002', password: 'p@ssw0rd2', status: 'active' },
   ]);
 
   const [revenue, setRevenue] = useState([
@@ -1031,39 +2134,143 @@ const OwnerDashboard = ({ onLogout, userData }) => {
   ]);
 
   const [showAddStaff, setShowAddStaff] = useState(false);
+  const [selectedStaff, setSelectedStaff] = useState(null);
+  const [showStaffModal, setShowStaffModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    firstName: '', lastName: '', email: '', position: '', tel: ''
+  });
   const [formData, setFormData] = useState({
-    staffName: '', staffPosition: '', staffTel: '', staffSalary: ''
+    staffFirstName: '', staffLastName: '', staffEmail: '', staffPosition: '', staffTel: ''
   });
 
   const handleFormChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const generateUsername = (firstName, lastName) => {
+    const firstPart = firstName.toLowerCase().replace(/\s/g, '').substring(0, 4);
+    const lastPart = lastName.toLowerCase().replace(/\s/g, '').substring(0, 3);
+    const randomNum = Math.floor(Math.random() * 999) + 1;
+    return `${firstPart}${lastPart}${randomNum.toString().padStart(3, '0')}`;
+  };
+
+  const generatePassword = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    let password = '';
+    for (let i = 0; i < 8; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+  };
+
   const handleAddStaff = (e) => {
     e.preventDefault();
-    if (!formData.staffName || !formData.staffPosition || !formData.staffTel || !formData.staffSalary) {
+    if (!formData.staffFirstName || !formData.staffLastName || !formData.staffEmail || !formData.staffPosition || !formData.staffTel) {
       alert('กรุณากรอกข้อมูลให้ครบถ้วน');
       return;
     }
     
+    const username = generateUsername(formData.staffFirstName, formData.staffLastName);
+    const password = generatePassword();
+    
     const newStaff = {
       id: staff.length + 1,
-      name: formData.staffName,
+      firstName: formData.staffFirstName,
+      lastName: formData.staffLastName,
+      name: `${formData.staffFirstName} ${formData.staffLastName}`,
       position: formData.staffPosition,
       tel: formData.staffTel,
-      salary: parseInt(formData.staffSalary),
+      email: formData.staffEmail,
+      username: username,
+      password: password,
+      status: 'active',
+      salary: 0,
       startDate: new Date().toISOString().split('T')[0]
     };
     
     setStaff([...staff, newStaff]);
-    setFormData({ staffName: '', staffPosition: '', staffTel: '', staffSalary: '' });
+    setFormData({ staffFirstName: '', staffLastName: '', staffEmail: '', staffPosition: '', staffTel: '' });
     setShowAddStaff(false);
     alert('เพิ่มพนักงานสำเร็จ');
   };
 
+  const handleStaffClick = (staffMember) => {
+    setSelectedStaff(staffMember);
+    setEditFormData({
+      firstName: staffMember.firstName || staffMember.name?.split(' ')[0] || '',
+      lastName: staffMember.lastName || staffMember.name?.split(' ').slice(1).join(' ') || '',
+      email: staffMember.email || '',
+      position: staffMember.position || '',
+      tel: staffMember.tel || ''
+    });
+    setIsEditing(false);
+    setShowStaffModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowStaffModal(false);
+    setSelectedStaff(null);
+    setIsEditing(false);
+  };
+
+  const handleEditClick = () => {
+    setIsEditing(true);
+  };
+
+  const handleEditFormChange = (field, value) => {
+    setEditFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveEdit = () => {
+    if (!editFormData.firstName || !editFormData.lastName || !editFormData.email || !editFormData.position || !editFormData.tel) {
+      alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+      return;
+    }
+
+    const updatedStaff = {
+      ...selectedStaff,
+      firstName: editFormData.firstName,
+      lastName: editFormData.lastName,
+      name: `${editFormData.firstName} ${editFormData.lastName}`,
+      email: editFormData.email,
+      position: editFormData.position,
+      tel: editFormData.tel
+    };
+
+    const updatedStaffList = staff.map(s => 
+      s.id === selectedStaff.id ? updatedStaff : s
+    );
+    
+    setStaff(updatedStaffList);
+    setSelectedStaff(updatedStaff);
+    setIsEditing(false);
+    alert('บันทึกการแก้ไขสำเร็จ');
+  };
+
+  const handleCancelEdit = () => {
+    setEditFormData({
+      firstName: selectedStaff.firstName || selectedStaff.name?.split(' ')[0] || '',
+      lastName: selectedStaff.lastName || selectedStaff.name?.split(' ').slice(1).join(' ') || '',
+      email: selectedStaff.email || '',
+      position: selectedStaff.position || '',
+      tel: selectedStaff.tel || ''
+    });
+    setIsEditing(false);
+  };
+
+  const handleStatusChange = (status) => {
+    if (selectedStaff) {
+      const updatedStaff = staff.map(s => 
+        s.id === selectedStaff.id ? { ...s, status: status } : s
+      );
+      setStaff(updatedStaff);
+      setSelectedStaff({ ...selectedStaff, status: status });
+    }
+  };
+
   const totalRevenue = revenue.reduce((a, b) => a + b.amount, 0);
   const totalServices = revenue.reduce((a, b) => a + b.services, 0);
-  const totalSalary = staff.reduce((a, b) => a + b.salary, 0);
 
   const filteredStaff = staff.filter(s =>
     s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1118,6 +2325,9 @@ const OwnerDashboard = ({ onLogout, userData }) => {
 
       <div className="max-w-7xl mx-auto p-4">
         <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {activeTab === 'staff' ? 'ค้นหาพนักงาน' : 'ค้นหารายได้'}
+          </label>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
             <input
@@ -1145,40 +2355,67 @@ const OwnerDashboard = ({ onLogout, userData }) => {
             {showAddStaff && (
               <div className="mb-6 p-4 bg-purple-50 rounded-lg">
                 <h3 className="font-bold mb-4">เพิ่มพนักงานใหม่</h3>
-                <form onSubmit={handleAddStaff} className="grid grid-cols-2 gap-4">
-                  <input
-                    type="text"
-                    value={formData.staffName}
-                    onChange={(e) => handleFormChange('staffName', e.target.value)}
-                    placeholder="ชื่อ-นามสกุล *"
-                    className="border rounded-lg px-4 py-2"
-                    required
-                  />
-                  <input
-                    type="text"
-                    value={formData.staffPosition}
-                    onChange={(e) => handleFormChange('staffPosition', e.target.value)}
-                    placeholder="ตำแหน่ง *"
-                    className="border rounded-lg px-4 py-2"
-                    required
-                  />
-                  <input
-                    type="text"
-                    value={formData.staffTel}
-                    onChange={(e) => handleFormChange('staffTel', e.target.value)}
-                    placeholder="เบอร์โทร *"
-                    className="border rounded-lg px-4 py-2"
-                    required
-                  />
-                  <input
-                    type="number"
-                    value={formData.staffSalary}
-                    onChange={(e) => handleFormChange('staffSalary', e.target.value)}
-                    placeholder="เงินเดือน (บาท) *"
-                    className="border rounded-lg px-4 py-2"
-                    required
-                  />
-                  <button type="submit" className="col-span-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
+                <form onSubmit={handleAddStaff} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">ชื่อ *</label>
+                      <input
+                        type="text"
+                        value={formData.staffFirstName}
+                        onChange={(e) => handleFormChange('staffFirstName', e.target.value)}
+                        placeholder="กรอกชื่อ"
+                        className="w-full border rounded-lg px-4 py-2"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">นามสกุล *</label>
+                      <input
+                        type="text"
+                        value={formData.staffLastName}
+                        onChange={(e) => handleFormChange('staffLastName', e.target.value)}
+                        placeholder="กรอกนามสกุล"
+                        className="w-full border rounded-lg px-4 py-2"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">อีเมล *</label>
+                    <input
+                      type="email"
+                      value={formData.staffEmail}
+                      onChange={(e) => handleFormChange('staffEmail', e.target.value)}
+                      placeholder="กรอกอีเมล"
+                      className="w-full border rounded-lg px-4 py-2"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">ตำแหน่ง *</label>
+                    <select
+                      value={formData.staffPosition}
+                      onChange={(e) => handleFormChange('staffPosition', e.target.value)}
+                      className="w-full border rounded-lg px-4 py-2"
+                      required
+                    >
+                      <option value="">เลือกตำแหน่ง</option>
+                      <option value="แพทย์">แพทย์</option>
+                      <option value="พนักงานคลินิก">พนักงานคลินิก</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">เบอร์โทร *</label>
+                    <input
+                      type="text"
+                      value={formData.staffTel}
+                      onChange={(e) => handleFormChange('staffTel', e.target.value)}
+                      placeholder="กรอกเบอร์โทร"
+                      className="w-full border rounded-lg px-4 py-2"
+                      required
+                    />
+                  </div>
+                  <button type="submit" className="w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
                     บันทึกพนักงาน
                   </button>
                 </form>
@@ -1187,17 +2424,31 @@ const OwnerDashboard = ({ onLogout, userData }) => {
 
             <div className="grid gap-4">
               {filteredStaff.map((s) => (
-                <div key={s.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div 
+                  key={s.id} 
+                  className="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => handleStaffClick(s)}
+                >
                   <div className="flex justify-between items-start">
-                    <div className="flex items-start space-x-4">
+                    <div className="flex items-start space-x-4 flex-1">
                       <div className="bg-purple-100 rounded-full w-16 h-16 flex items-center justify-center">
                         <User size={32} className="text-purple-600" />
                       </div>
-                      <div>
-                        <h3 className="font-bold text-lg">{s.name}</h3>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-1">
+                          <h3 className="font-bold text-lg">{s.name}</h3>
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            s.status === 'active' 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {s.status === 'active' ? 'Active' : 'Offline'}
+                          </span>
+                        </div>
                         <p className="text-gray-600">ตำแหน่ง: {s.position}</p>
                         <p className="text-gray-600">โทร: {s.tel}</p>
-                        <p className="text-gray-600">เงินเดือน: {s.salary.toLocaleString()} บาท/เดือน</p>
+                        {s.email && <p className="text-gray-600">อีเมล: {s.email}</p>}
+                        {s.salary > 0 && <p className="text-gray-600">เงินเดือน: {s.salary.toLocaleString()} บาท/เดือน</p>}
                         <p className="text-sm text-gray-500 mt-2">เริ่มงาน: {s.startDate}</p>
                       </div>
                     </div>
@@ -1205,18 +2456,172 @@ const OwnerDashboard = ({ onLogout, userData }) => {
                 </div>
               ))}
             </div>
-            <div className="mt-6 bg-purple-50 p-4 rounded-lg">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center">
-                  <p className="text-gray-700">จำนวนพนักงาน</p>
-                  <p className="font-bold text-2xl text-purple-600">{staff.length} คน</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-gray-700">ค่าใช้จ่ายเงินเดือนรวม</p>
-                  <p className="font-bold text-2xl text-purple-600">{totalSalary.toLocaleString()} บาท</p>
+
+            {showStaffModal && selectedStaff && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleCloseModal}>
+                <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold text-gray-800">รายละเอียดพนักงาน</h2>
+                    <button 
+                      onClick={handleCloseModal}
+                      className="text-gray-500 hover:text-gray-700 text-2xl"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">ชื่อ *</label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editFormData.firstName}
+                          onChange={(e) => handleEditFormChange('firstName', e.target.value)}
+                          className="w-full border rounded-lg px-4 py-2"
+                          required
+                        />
+                      ) : (
+                        <p className="text-gray-900">{selectedStaff.firstName || selectedStaff.name?.split(' ')[0] || '-'}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">นามสกุล *</label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editFormData.lastName}
+                          onChange={(e) => handleEditFormChange('lastName', e.target.value)}
+                          className="w-full border rounded-lg px-4 py-2"
+                          required
+                        />
+                      ) : (
+                        <p className="text-gray-900">{selectedStaff.lastName || selectedStaff.name?.split(' ').slice(1).join(' ') || '-'}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">เบอร์โทร *</label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editFormData.tel}
+                          onChange={(e) => handleEditFormChange('tel', e.target.value)}
+                          className="w-full border rounded-lg px-4 py-2"
+                          required
+                        />
+                      ) : (
+                        <p className="text-gray-900">{selectedStaff.tel || '-'}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">อีเมล *</label>
+                      {isEditing ? (
+                        <input
+                          type="email"
+                          value={editFormData.email}
+                          onChange={(e) => handleEditFormChange('email', e.target.value)}
+                          className="w-full border rounded-lg px-4 py-2"
+                          required
+                        />
+                      ) : (
+                        <p className="text-gray-900">{selectedStaff.email || '-'}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">ตำแหน่ง *</label>
+                      {isEditing ? (
+                        <select
+                          value={editFormData.position}
+                          onChange={(e) => handleEditFormChange('position', e.target.value)}
+                          className="w-full border rounded-lg px-4 py-2"
+                          required
+                        >
+                          <option value="">เลือกตำแหน่ง</option>
+                          <option value="แพทย์">แพทย์</option>
+                          <option value="พนักงานคลินิก">พนักงานคลินิก</option>
+                        </select>
+                      ) : (
+                        <p className="text-gray-900">{selectedStaff.position || '-'}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                      <p className="text-gray-900 font-mono">{selectedStaff.username || '-'}</p>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                      <p className="text-gray-900 font-mono">{selectedStaff.password || '-'}</p>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                      <div className="flex space-x-3">
+                        <button
+                          onClick={() => handleStatusChange('active')}
+                          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                            selectedStaff.status === 'active'
+                              ? 'bg-green-600 text-white'
+                              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          }`}
+                        >
+                          Active
+                        </button>
+                        <button
+                          onClick={() => handleStatusChange('offline')}
+                          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                            selectedStaff.status === 'offline'
+                              ? 'bg-red-600 text-white'
+                              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          }`}
+                        >
+                          Offline
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6 flex justify-end space-x-3">
+                    {isEditing ? (
+                      <>
+                        <button
+                          onClick={handleCancelEdit}
+                          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
+                        >
+                          ยกเลิก
+                        </button>
+                        <button
+                          onClick={handleSaveEdit}
+                          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium"
+                        >
+                          บันทึก
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={handleEditClick}
+                          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium"
+                        >
+                          แก้ไข
+                        </button>
+                        <button
+                          onClick={handleCloseModal}
+                          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
+                        >
+                          ปิด
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
